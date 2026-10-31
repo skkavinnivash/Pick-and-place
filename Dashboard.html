@@ -1,0 +1,2363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Master — Project & File Intelligence Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #070814;
+      --bg-surface: #0d0f24;
+      --bg-card: rgba(20, 23, 54, 0.72);
+      --bg-card-hover: rgba(30, 35, 78, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(139, 92, 246, 0.35);
+      --accent-purple: #8b5cf6;
+      --accent-purple-glow: rgba(139, 92, 246, 0.35);
+      --accent-cyan: #06b6d4;
+      --accent-cyan-glow: rgba(6, 182, 212, 0.35);
+      --accent-pink: #ec4899;
+      --accent-amber: #f59e0b;
+      --accent-green: #10b981;
+      --accent-green-glow: rgba(16, 185, 129, 0.35);
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(circle at 10% 15%, rgba(139, 92, 246, 0.16) 0%, transparent 45%),
+        radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
+        linear-gradient(180deg, #070814 0%, #0a0c20 100%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Orb elements */
+    .ambient-glow-1 {
+      position: fixed;
+      top: -120px;
+      left: 15%;
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.22) 0%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .ambient-glow-2 {
+      position: fixed;
+      bottom: -100px;
+      right: 10%;
+      width: 520px;
+      height: 520px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.18) 0%, transparent 70%);
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* App container */
+    .dashboard-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem 4rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Top Header Bar */
+    header.dashboard-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.25rem;
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem 1.75rem;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.3));
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.9rem;
+      box-shadow: 0 0 20px var(--accent-purple-glow);
+    }
+
+    .brand-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.65rem;
+      background: linear-gradient(135deg, #ffffff 20%, #c4b5fd 70%, #67e8f9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #34d399;
+      box-shadow: 0 0 8px #34d399;
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Header Actions */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 18px var(--accent-purple-glow);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 8px 26px rgba(139, 92, 246, 0.55);
+      background: linear-gradient(135deg, #9333ea, #4f46e5);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--border-subtle);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-cyan {
+      background: linear-gradient(135deg, #06b6d4, #0284c7);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 18px var(--accent-cyan-glow);
+    }
+    .btn-cyan:hover {
+      box-shadow: 0 8px 26px rgba(6, 182, 212, 0.55);
+    }
+
+    /* Key Metrics Overview Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.18);
+      background: var(--bg-card-hover);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--card-accent, #8b5cf6), transparent);
+    }
+
+    .metric-icon-box {
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.45rem;
+      background: var(--icon-bg, rgba(139, 92, 246, 0.15));
+      border: 1px solid var(--icon-border, rgba(139, 92, 246, 0.3));
+      flex-shrink: 0;
+    }
+
+    .metric-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .metric-value {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.45rem;
+      color: var(--text-main);
+      line-height: 1.15;
+    }
+
+    .metric-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 0.2rem;
+    }
+
+    /* Navigation Tabs */
+    .tabs-nav-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem;
+      background: rgba(13, 15, 36, 0.85);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .tabs-nav-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.65rem 1.15rem;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(6, 182, 212, 0.25));
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    }
+
+    .tab-btn .tab-badge {
+      padding: 0.12rem 0.45rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+    }
+
+    .tab-btn.active .tab-badge {
+      background: var(--accent-cyan);
+      color: #070814;
+    }
+
+    /* Tab Content Viewport */
+    .tab-pane {
+      display: none;
+      animation: fadeInTab 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    @keyframes fadeInTab {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---------------------------------------------------- */
+    /* TAB 1: LIVE GAME SANDBOX                              */
+    /* ---------------------------------------------------- */
+    .sandbox-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .sandbox-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sandbox-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .sandbox-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    .sandbox-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .iframe-wrapper {
+      position: relative;
+      width: 100%;
+      height: 720px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: #0a0b1a;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .iframe-wrapper iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .sandbox-footer-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding-top: 0.5rem;
+    }
+
+    /* ---------------------------------------------------- */
+    /* TAB 2: INTERACTIVE FILE EXPLORER                     */
+    /* ---------------------------------------------------- */
+    .explorer-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 1.25rem;
+      min-height: 740px;
+    }
+
+    @media (max-width: 980px) {
+      .explorer-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .explorer-sidebar {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-height: 820px;
+      overflow-y: auto;
+    }
+
+    .explorer-search-input {
+      width: 100%;
+      padding: 0.65rem 0.95rem;
+      border-radius: var(--radius-sm);
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      font-size: 0.86rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .explorer-search-input:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 12px var(--accent-purple-glow);
+    }
+
+    .file-tree-group-title {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin: 0.75rem 0 0.4rem 0.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .file-item-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.84rem;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+
+    .file-item-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .file-item-btn.active {
+      background: rgba(139, 92, 246, 0.18);
+      color: #ffffff;
+      border-color: rgba(139, 92, 246, 0.45);
+      box-shadow: 0 0 14px rgba(139, 92, 246, 0.2);
+    }
+
+    .file-left-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-ext-chip {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .ext-jsx { background: rgba(56, 189, 248, 0.18); color: #38bdf8; }
+    .ext-js  { background: rgba(250, 204, 21, 0.18); color: #facc15; }
+    .ext-css { background: rgba(236, 72, 153, 0.18); color: #ec4899; }
+    .ext-html{ background: rgba(249, 115, 22, 0.18); color: #fb923c; }
+    .ext-json{ background: rgba(16, 185, 129, 0.18); color: #34d399; }
+    .ext-bat { background: rgba(148, 163, 184, 0.18); color: #94a3b8; }
+
+    .file-size-badge {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    /* Code Viewer pane */
+    .code-viewer-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      overflow: hidden;
+    }
+
+    .code-header-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .code-file-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .code-file-name {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--accent-cyan);
+    }
+
+    .code-file-path {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    .code-box-container {
+      position: relative;
+      flex: 1;
+      background: #090a16;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      overflow: auto;
+      max-height: 700px;
+    }
+
+    pre.code-display {
+      margin: 0;
+      padding: 1rem 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+      tab-size: 2;
+      white-space: pre;
+    }
+
+    /* ---------------------------------------------------- */
+    /* TAB 3: ARCHITECTURE & STATE MACHINE                  */
+    /* ---------------------------------------------------- */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card-panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .card-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 0.75rem;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* State flow steps */
+    .flow-steps-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      position: relative;
+    }
+
+    .flow-step-item {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 1.15rem;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .flow-step-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateX(4px);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .flow-step-num {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1rem;
+      flex-shrink: 0;
+      background: var(--step-bg, rgba(139, 92, 246, 0.2));
+      color: var(--step-color, #c4b5fd);
+      border: 1px solid var(--step-border, rgba(139, 92, 246, 0.4));
+    }
+
+    .flow-step-content h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    .flow-step-content p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* ---------------------------------------------------- */
+    /* TAB 4: WEB AUDIO SOUNDBOARD                          */
+    /* ---------------------------------------------------- */
+    .soundboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .sound-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+
+    .sound-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--sound-accent, #8b5cf6);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 20px var(--sound-glow, rgba(139, 92, 246, 0.3));
+    }
+
+    .sound-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sound-icon-orb {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      background: var(--sound-bg, rgba(139, 92, 246, 0.15));
+      border: 1px solid var(--sound-border, rgba(139, 92, 246, 0.3));
+    }
+
+    .sound-play-chip {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .sound-card:hover .sound-play-chip {
+      background: var(--sound-accent, #8b5cf6);
+      color: #070814;
+    }
+
+    .sound-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text-main);
+    }
+
+    .sound-freq-meta {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    /* ---------------------------------------------------- */
+    /* TAB 5: GESTURE AI STUDIO                             */
+    /* ---------------------------------------------------- */
+    .gesture-studio-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .gesture-studio-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .gesture-interactive-pad {
+      position: relative;
+      height: 380px;
+      background: #090a18;
+      border: 2px dashed rgba(6, 182, 212, 0.35);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: crosshair;
+    }
+
+    .gesture-pad-dot {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 20px var(--accent-cyan-glow);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: transform 0.05s ease-out;
+    }
+
+    .gesture-pad-pinch-ring {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-purple);
+      box-shadow: 0 0 15px var(--accent-purple-glow);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      transition: all 0.15s ease;
+    }
+
+    /* ---------------------------------------------------- */
+    /* TAB 6: 50-ITEM OBJECT CATALOG                        */
+    /* ---------------------------------------------------- */
+    .catalog-search-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .category-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .cat-pill-btn {
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .cat-pill-btn:hover, .cat-pill-btn.active {
+      background: var(--accent-purple);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .objects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.85rem;
+      max-height: 600px;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .item-chip-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.45rem;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .item-chip-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .item-chip-emoji {
+      font-size: 2.1rem;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+    }
+
+    .item-chip-name {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .item-chip-cat {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.28);
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <div class="dashboard-container">
+    <!-- Top Header -->
+    <header class="dashboard-header">
+      <div class="brand-section">
+        <div class="brand-icon">🧠</div>
+        <div>
+          <h1 class="brand-title">Memory Master — Project Intelligence</h1>
+          <div class="brand-subtitle">
+            <span>60-Second Challenge</span>
+            <span>•</span>
+            <span class="status-pill">
+              <span class="status-dot"></span>
+              All 19 Files Scanned & Bundled (320 KB)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a href="Memory-Master.html" target="_blank" class="btn btn-primary" title="Launch game in standalone window">
+          <span>🚀</span> Open Fullscreen Game
+        </a>
+        <button id="quickSoundBtn" class="btn btn-secondary" title="Play test audio tone">
+          <span>🔊</span> Test Audio
+        </button>
+      </div>
+    </header>
+
+    <!-- Key Metrics Grid -->
+    <div class="metrics-grid">
+      <div class="metric-card" style="--card-accent: #06b6d4;">
+        <div class="metric-icon-box" style="--icon-bg: rgba(6, 182, 212, 0.15); --icon-border: rgba(6, 182, 212, 0.3);">
+          📦
+        </div>
+        <div class="metric-info">
+          <span class="metric-value">320 KB</span>
+          <span class="metric-label">Single-File Production Bundle</span>
+        </div>
+      </div>
+
+      <div class="metric-card" style="--card-accent: #8b5cf6;">
+        <div class="metric-icon-box" style="--icon-bg: rgba(139, 92, 246, 0.15); --icon-border: rgba(139, 92, 246, 0.3);">
+          ⚛️
+        </div>
+        <div class="metric-info">
+          <span class="metric-value">React 19</span>
+          <span class="metric-label">Modern Concurrent Architecture</span>
+        </div>
+      </div>
+
+      <div class="metric-card" style="--card-accent: #ec4899;">
+        <div class="metric-icon-box" style="--icon-bg: rgba(236, 72, 153, 0.15); --icon-border: rgba(236, 72, 153, 0.3);">
+          🖐️
+        </div>
+        <div class="metric-info">
+          <span class="metric-value">MediaPipe AI</span>
+          <span class="metric-label">Webcam Pinch & Hand Tracking</span>
+        </div>
+      </div>
+
+      <div class="metric-card" style="--card-accent: #10b981;">
+        <div class="metric-icon-box" style="--icon-bg: rgba(16, 185, 129, 0.15); --icon-border: rgba(16, 185, 129, 0.3);">
+          🗂️
+        </div>
+        <div class="metric-info">
+          <span class="metric-value">50 Items</span>
+          <span class="metric-label">Across 10 Distinct Categories</span>
+        </div>
+      </div>
+
+      <div class="metric-card" style="--card-accent: #f59e0b;">
+        <div class="metric-icon-box" style="--icon-bg: rgba(245, 158, 11, 0.15); --icon-border: rgba(245, 158, 11, 0.3);">
+          🎯
+        </div>
+        <div class="metric-info">
+          <span class="metric-value">3 Modes</span>
+          <span class="metric-label">Easy (10), Med (15), Hard (20)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs Bar -->
+    <nav class="tabs-nav-bar">
+      <button class="tab-btn active" data-tab="tab-sandbox">
+        <span>🎮</span> Live Game Sandbox
+        <span class="tab-badge">Playable</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-explorer">
+        <span>📁</span> File & Code Explorer
+        <span class="tab-badge">19 Files</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-architecture">
+        <span>🏛️</span> Architecture & State Flow
+      </button>
+      <button class="tab-btn" data-tab="tab-soundboard">
+        <span>🔊</span> Web Audio Soundboard
+        <span class="tab-badge">8 FX</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-gestures">
+        <span>🖐️</span> Gesture AI Studio
+      </button>
+      <button class="tab-btn" data-tab="tab-catalog">
+        <span>🗃️</span> 50-Item Emoji Catalog
+      </button>
+    </nav>
+
+    <!-- ======================================================== -->
+    <!-- TAB 1: LIVE GAME SANDBOX                                 -->
+    <!-- ======================================================== -->
+    <section id="tab-sandbox" class="tab-pane active">
+      <div class="sandbox-card">
+        <div class="sandbox-toolbar">
+          <div class="sandbox-title-wrap">
+            <h3 style="font-family: var(--font-display); font-size: 1.2rem;">Live Interactive Embedded Sandbox</h3>
+            <span class="sandbox-tag">STANDALONE OFFLINE READY</span>
+          </div>
+          <div class="sandbox-controls">
+            <button id="reloadIframeBtn" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;">
+              <span>🔄</span> Restart Game
+            </button>
+            <a href="Memory-Master.html" target="_blank" class="btn btn-cyan" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;">
+              <span>↗️</span> Pop-out New Window
+            </a>
+          </div>
+        </div>
+
+        <div class="iframe-wrapper">
+          <iframe id="gameIframe" src="Memory-Master.html" title="Memory Master Game Frame" allow="camera; microphone"></iframe>
+        </div>
+
+        <div class="sandbox-footer-bar">
+          <div>💡 <strong>New Feature:</strong> Draggable Webcam Feed! Click <strong>"Hand Cam"</strong>, then click &amp; drag the camera header <code>⋮⋮</code> to move your webcam view anywhere on the screen!</div>
+          <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent-cyan);">Source: ./Memory-Master.html (320,844 bytes)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: INTERACTIVE FILE EXPLORER                         -->
+    <!-- ======================================================== -->
+    <section id="tab-explorer" class="tab-pane">
+      <div class="explorer-layout">
+        <!-- Sidebar Tree -->
+        <div class="explorer-sidebar">
+          <div>
+            <input type="text" id="fileSearchInput" class="explorer-search-input" placeholder="🔍 Filter project files...">
+          </div>
+
+          <div id="fileTreeContainer">
+            <!-- Populated via JavaScript -->
+          </div>
+        </div>
+
+        <!-- Code Viewer Pane -->
+        <div class="code-viewer-card">
+          <div class="code-header-bar">
+            <div class="code-file-info">
+              <span id="activeFileExt" class="file-ext-chip ext-jsx">JSX</span>
+              <div>
+                <div id="activeFileName" class="code-file-name">App.jsx</div>
+                <div id="activeFilePath" class="code-file-path">src/App.jsx</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <span id="activeFileLineCount" class="file-size-badge" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background: rgba(255, 255, 255, 0.05); border-radius: 4px;">197 Lines</span>
+              <button id="copyCodeBtn" class="btn btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;">
+                <span>📋</span> Copy Code
+              </button>
+            </div>
+          </div>
+
+          <div class="code-box-container">
+            <pre id="codeDisplayArea" class="code-display">// Select a file to inspect its source code...</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- TAB 3: ARCHITECTURE & STATE FLOW                         -->
+    <!-- ======================================================== -->
+    <section id="tab-architecture" class="tab-pane">
+      <div class="arch-grid">
+        <!-- State Machine Card -->
+        <div class="card-panel">
+          <div class="card-title-bar">
+            <h3 class="card-title"><span>🔄</span> Game Lifecycle State Machine</h3>
+            <span class="sandbox-tag">React State: phase</span>
+          </div>
+
+          <div class="flow-steps-wrap">
+            <div class="flow-step-item">
+              <div class="flow-step-num" style="--step-bg: rgba(6, 182, 212, 0.2); --step-color: #67e8f9; --step-border: rgba(6, 182, 212, 0.4);">
+                1
+              </div>
+              <div class="flow-step-content">
+                <h4>phase = 'home' (HomeScreen.jsx)</h4>
+                <p>Hero banner, game difficulty picker (Easy 10 / Medium 15 / Hard 20), webcam gesture toggle, rules modal, and animated item showcase.</p>
+              </div>
+            </div>
+
+            <div class="flow-step-item">
+              <div class="flow-step-num" style="--step-bg: rgba(139, 92, 246, 0.2); --step-color: #c4b5fd; --step-border: rgba(139, 92, 246, 0.4);">
+                2
+              </div>
+              <div class="flow-step-content">
+                <h4>phase = 'preview' (PreviewPhase.jsx)</h4>
+                <p>15-second memorization window. Random distinct objects placed in numbered slots. Real-time SVG circular countdown clock with audio ticks.</p>
+              </div>
+            </div>
+
+            <div class="flow-step-item">
+              <div class="flow-step-num" style="--step-bg: rgba(245, 158, 11, 0.2); --step-color: #fde68a; --step-border: rgba(245, 158, 11, 0.4);">
+                3
+              </div>
+              <div class="flow-step-content">
+                <h4>phase = 'challenge' (ChallengePhase.jsx)</h4>
+                <p>60-second blitz timer! Grid slots clear. Objects are shuffled into tray. Players drag-and-drop or tap-to-place items into correct slots.</p>
+              </div>
+            </div>
+
+            <div class="flow-step-item">
+              <div class="flow-step-num" style="--step-bg: rgba(16, 185, 129, 0.2); --step-color: #6ee7b7; --step-border: rgba(16, 185, 129, 0.4);">
+                4
+              </div>
+              <div class="flow-step-content">
+                <h4>phase = 'results' (ResultsScreen.jsx)</h4>
+                <p>Canvas confetti explosion, score calculation (10 pts per match), accuracy %, time used, high score local storage update, and side-by-side slot breakdown.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Architecture Breakdown Card -->
+        <div class="card-panel">
+          <div class="card-title-bar">
+            <h3 class="card-title"><span>🧩</span> Component & Module Architecture</h3>
+            <span class="sandbox-tag">Modular Hierarchy</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.88rem;">
+            <div style="background: rgba(255,255,255,0.035); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <h4 style="color: var(--accent-cyan); font-weight: 700; margin-bottom: 0.4rem;">App.jsx (Orchestrator)</h4>
+              <p style="color: var(--text-muted); font-size: 0.84rem;">
+                Wraps entire tree with <code>HandGestureProvider</code>, mounts decorative ambient background glow orbs, rules modal, high scores modal, and delegates active screen by phase.
+              </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.035); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <h4 style="color: var(--accent-purple); font-weight: 700; margin-bottom: 0.4rem;">HandGestureContext.jsx & handTracking.js</h4>
+              <p style="color: var(--text-muted); font-size: 0.84rem;">
+                Loads Google MediaPipe Hands AI from CDN, streams webcam frames at 30fps, tracks landmarks 4 (thumb) & 8 (index), computes Euclidean distance for pinch triggers, and draws virtual skeleton.
+              </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.035); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <h4 style="color: var(--accent-pink); font-weight: 700; margin-bottom: 0.4rem;">audio.js (Web Audio Synthesizer)</h4>
+              <p style="color: var(--text-muted); font-size: 0.84rem;">
+                Zero-asset in-memory Web Audio API oscillator synthesis for reliable zero-latency tones: pickup, place, tick, urgent tick, fanfare, and buzzer.
+              </p>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.035); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <h4 style="color: var(--accent-amber); font-weight: 700; margin-bottom: 0.4rem;">objects.js & storage.js</h4>
+              <p style="color: var(--text-muted); font-size: 0.84rem;">
+                Curated library of 50 emojis across 10 categories, difficulty matrix parameters, random round generator, and localStorage high scores manager.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- TAB 4: WEB AUDIO SOUNDBOARD                              -->
+    <!-- ======================================================== -->
+    <section id="tab-soundboard" class="tab-pane">
+      <div class="card-panel">
+        <div class="card-title-bar">
+          <div>
+            <h3 class="card-title"><span>🔊</span> Interactive Game Soundboard</h3>
+            <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 0.2rem;">
+              Synthesized directly in your browser using the native Web Audio API oscillators from <code>src/utils/audio.js</code>.
+            </p>
+          </div>
+          <button id="unmuteAllBtn" class="btn btn-secondary">
+            <span>🔊</span> Audio Enabled
+          </button>
+        </div>
+
+        <div class="soundboard-grid">
+          <!-- Card Pickup -->
+          <div class="sound-card" onclick="playSoundEffect('pickup')" style="--sound-accent: #38bdf8; --sound-glow: rgba(56, 189, 248, 0.35);">
+            <div class="sound-card-header">
+              <div class="sound-icon-orb" style="--sound-bg: rgba(56, 189, 248, 0.15); --sound-border: rgba(56, 189, 248, 0.35);">🤏</div>
+              <span class="sound-play-chip">Play Sound</span>
+            </div>
+            <div>
+              <div class="sound-title">Card Pickup</div>
+              <div class="sound-freq-meta">440Hz -> 660Hz ramp (Sine)</div>
+            </div>
+          </div>
+
+          <!-- Card Drop / Snap -->
+          <div class="sound-card" onclick="playSoundEffect('drop')" style="--sound-accent: #10b981; --sound-glow: rgba(16, 185, 129, 0.35);">
+            <div class="sound-card-header">
+              <div class="sound-icon-orb" style="--sound-bg: rgba(16, 185, 129, 0.15); --sound-border: rgba(16, 185, 129, 0.35);">📥</div>
+              <span class="sound-play-chip">Play Sound</span>
+            </div>
+            <div>
+              <div class="sound-title">Card Drop / Snap</div>
+              <div class="sound-freq-meta">520Hz tone (Sine, 0.08s)</div>
+            </div>
+          </div>
+
+          <!-- Countdown Tick -->
+          <div class="sound-card" onclick="playSoundEffect('tick')" style="--sound-accent: #a855f7; --sound-glow: rgba(168, 85, 247, 0.35);">
+            <div class="sound-card-header">
+              <div class="sound-icon-orb" style="--sound-bg: rgba(168, 85, 247, 0.15); --sound-border: rgba(168, 85, 247, 0.35);">⏱️</div>
+              <span class="sound-play-chip">Play Sound</span>
+            </div>
+            <div>
+              <div class="sound-title">Timer Soft Tick</div>
+              <div class="sound-freq-meta">800Hz click (Sine, 0.04s)</div>
+            </div>
+          </div>
+
+          <!-- Urgent Tick -->
+          <div class="sound-card" onclick="playSoundEffect('urgentTick')" style="--sound-accent: #f59e0b; --sound-glow: rgba(245, 158, 11, 0.35);">
+            <div class="sound-card-header">
+              <div class="sound-icon-orb" style="--sound-bg: rgba(245, 158, 11, 0.15); --sound-border: rgba(245, 158, 11, 0.35);">⚠️</div>
+              <span class="sound-play-chip">Play Sound</span>
+            </div>
+            <div>
+              <div class="sound-title">Urgent Tick (Final 10s)</div>
+              <div class="sound-freq-meta">950Hz -> 550Hz (Triangle)</div>
+            </div>
+          </div>
+
+          <!-- Preview Tick -->
+          <div class="sound-card" onclick="playSoundEffect('previewTick')" style="--sound-accent: #06b6d4; --sound-glow: rgba(6, 182, 212, 0.35);">
+            <div class="sound-card-header">
+              <div class="sound-icon-orb" style="--sound-bg: rgba(6, 182, 212, 0.15); --sound-border: rgba(6, 182, 212, 0.35);">👁️</div>
+              <span class="sound-play-chip">Play Sound</span>
+            </div>
+            <div>
+              <div class="sound-title">Preview Countdown</div>
+              <div class="sound-freq-meta">520Hz / 880Hz alert</div>
+            </div>
+          </div>
+
+          <!-- Preview End / Go! -->
+          <div class="sound-card" onclick="playSoundEffect('previewEnd')" style="--sound-accent: #ec4899; --sound-glow: rgba(236, 72, 153, 0.35);">
+            <div class="sound-card-header">
+              <div class="sound-icon-orb" style="--sound-bg: rgba(236, 72, 153, 0.15); --sound-border: rgba(236, 72, 153, 0.35);">🚀</div>
+              <span class="sound-play-chip">Play Sound</span>
+            </div>
+            <div>
+              <div class="sound-title">Preview End / Challenge Start</div>
+              <div class="sound-freq-meta">660Hz -> 990Hz transition</div>
+            </div>
+          </div>
+
+          <!-- Victory Fanfare -->
+          <div class="sound-card" onclick="playSoundEffect('victory')" style="--sound-accent: #eab308; --sound-glow: rgba(234, 179, 8, 0.35);">
+            <div class="sound-card-header">
+              <div class="sound-icon-orb" style="--sound-bg: rgba(234, 179, 8, 0.15); --sound-border: rgba(234, 179, 8, 0.35);">🏆</div>
+              <span class="sound-play-chip">Play Sound</span>
+            </div>
+            <div>
+              <div class="sound-title">Victory Fanfare</div>
+              <div class="sound-freq-meta">C-E-G-C Harmonic Major Chord</div>
+            </div>
+          </div>
+
+          <!-- Timeout Buzzer -->
+          <div class="sound-card" onclick="playSoundEffect('buzzer')" style="--sound-accent: #ef4444; --sound-glow: rgba(239, 68, 68, 0.35);">
+            <div class="sound-card-header">
+              <div class="sound-icon-orb" style="--sound-bg: rgba(239, 68, 68, 0.15); --sound-border: rgba(239, 68, 68, 0.35);">🚨</div>
+              <span class="sound-play-chip">Play Sound</span>
+            </div>
+            <div>
+              <div class="sound-title">Timeout Buzzer</div>
+              <div class="sound-freq-meta">140Hz -> 90Hz (Sawtooth)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- TAB 5: GESTURE AI STUDIO                                 -->
+    <!-- ======================================================== -->
+    <section id="tab-gestures" class="tab-pane">
+      <div class="card-panel">
+        <div class="card-title-bar">
+          <h3 class="card-title"><span>🖐️</span> MediaPipe Hand Gesture AI Diagnostic Studio</h3>
+          <span class="sandbox-tag">Computer Vision Core</span>
+        </div>
+
+        <div class="gesture-studio-layout">
+          <!-- Interactive Test Pad -->
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700; font-size: 0.95rem;">Interactive Virtual Gesture Pad</span>
+              <span id="pinchStatusIndicator" style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan);">Move mouse inside to emulate hand</span>
+            </div>
+
+            <div id="gestureTestPad" class="gesture-interactive-pad">
+              <div id="gesturePadDot" class="gesture-pad-dot"></div>
+              <div id="gesturePadRing" class="gesture-pad-pinch-ring"></div>
+              <div style="color: rgba(255,255,255,0.25); font-size: 0.85rem; user-select: none; pointer-events: none; text-align: center;">
+                Move mouse here &amp; click to simulate Pinch Gesture
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim); font-family: var(--font-mono);">
+              <span>X: <span id="diagCoordX">0</span>px, Y: <span id="diagCoordY">0</span>px</span>
+              <span>Pinch Distance: <span id="diagPinchVal">0.082</span> (Threshold &lt; 0.055)</span>
+            </div>
+          </div>
+
+          <!-- Specs & Explanation -->
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <h4 style="font-weight: 700; color: var(--accent-purple);">How MediaPipe Hand Tracking Works in this App</h4>
+            
+            <div style="background: rgba(255, 255, 255, 0.035); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--accent-cyan); font-weight: 700;">1. Landmarks:</span>
+                <span>Track 21 3D hand keypoints extracted from video stream.</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--accent-purple); font-weight: 700;">2. Virtual Cursor:</span>
+                <span>Landmark 8 (Index finger tip) maps directly to screen X &amp; Y.</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--accent-pink); font-weight: 700;">3. Pinch Calculation:</span>
+                <span>Euclidean distance between Landmark 4 (Thumb) and Landmark 8:</span>
+              </div>
+              <div style="font-family: var(--font-mono); background: rgba(0,0,0,0.4); padding: 0.4rem 0.6rem; border-radius: 4px; color: #a5f3fc; font-size: 0.78rem;">
+                dist = Math.hypot(thumb.x - index.x, thumb.y - index.y)
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--accent-green); font-weight: 700;">4. Drag &amp; Drop:</span>
+                <span>When <code>dist &lt; 0.055</code>, pinch activates, picking up card and dropping when released!</span>
+              </div>
+            </div>
+
+            <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: var(--radius-md); padding: 0.85rem; font-size: 0.84rem; color: #a5f3fc;">
+              💡 <strong>Camera Note:</strong> Camera permission is requested only when the user clicks <em>"Hand Cam"</em>. If no webcam is available or permission is declined, the game automatically runs with smooth mouse / touch drag-and-drop.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- TAB 6: 50-ITEM OBJECT CATALOG                            -->
+    <!-- ======================================================== -->
+    <section id="tab-catalog" class="tab-pane">
+      <div class="card-panel">
+        <div class="catalog-search-bar">
+          <div>
+            <h3 class="card-title"><span>🗃️</span> 50-Item Emoji &amp; Difficulty Catalog</h3>
+            <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 0.2rem;">
+              All 50 handcrafted items with distinct themes, colors, and spatial challenge tiers.
+            </p>
+          </div>
+          <div class="category-pills" id="catalogCategoryPills">
+            <!-- Filter pills -->
+          </div>
+        </div>
+
+        <div class="objects-grid" id="catalogObjectsGrid">
+          <!-- Populated via JavaScript -->
+        </div>
+
+        <!-- Difficulty Table -->
+        <div style="margin-top: 1rem; border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
+          <h4 style="font-weight: 700; margin-bottom: 0.75rem; color: var(--accent-cyan);">Difficulty Modes Comparison</h4>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.86rem; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-dim);">
+                  <th style="padding: 0.6rem 0.8rem;">Difficulty</th>
+                  <th style="padding: 0.6rem 0.8rem;">Items to Memorize</th>
+                  <th style="padding: 0.6rem 0.8rem;">Preview Time</th>
+                  <th style="padding: 0.6rem 0.8rem;">Challenge Time</th>
+                  <th style="padding: 0.6rem 0.8rem;">Grid Layout</th>
+                  <th style="padding: 0.6rem 0.8rem;">Max Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <td style="padding: 0.75rem 0.8rem; font-weight: 700; color: #10b981;">🟢 Easy</td>
+                  <td style="padding: 0.75rem 0.8rem;">10 items</td>
+                  <td style="padding: 0.75rem 0.8rem;">15 seconds</td>
+                  <td style="padding: 0.75rem 0.8rem;">60 seconds</td>
+                  <td style="padding: 0.75rem 0.8rem; font-family: var(--font-mono);">5 x 2 Grid</td>
+                  <td style="padding: 0.75rem 0.8rem; font-weight: 700;">100 pts</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <td style="padding: 0.75rem 0.8rem; font-weight: 700; color: #f59e0b;">🟡 Medium</td>
+                  <td style="padding: 0.75rem 0.8rem;">15 items</td>
+                  <td style="padding: 0.75rem 0.8rem;">15 seconds</td>
+                  <td style="padding: 0.75rem 0.8rem;">60 seconds</td>
+                  <td style="padding: 0.75rem 0.8rem; font-family: var(--font-mono);">5 x 3 Grid</td>
+                  <td style="padding: 0.75rem 0.8rem; font-weight: 700;">150 pts</td>
+                </tr>
+                <tr>
+                  <td style="padding: 0.75rem 0.8rem; font-weight: 700; color: #ef4444;">🔴 Hard</td>
+                  <td style="padding: 0.75rem 0.8rem;">20 items</td>
+                  <td style="padding: 0.75rem 0.8rem;">15 seconds</td>
+                  <td style="padding: 0.75rem 0.8rem;">60 seconds</td>
+                  <td style="padding: 0.75rem 0.8rem; font-family: var(--font-mono);">5 x 4 Grid</td>
+                  <td style="padding: 0.75rem 0.8rem; font-weight: 700;">200 pts</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    /* ======================================================== */
+    /* 1. PROJECT FILES REPOSITORY DATA                         */
+    /* ======================================================== */
+    const PROJECT_FILES = [
+      {
+        path: "src/App.jsx",
+        name: "App.jsx",
+        category: "Components",
+        ext: "jsx",
+        lines: 197,
+        size: "6.4 KB",
+        content: `import React, { useState, useEffect, useCallback } from 'react';
+import Navbar from './components/Navbar';
+import HomeScreen from './components/HomeScreen';
+import PreviewPhase from './components/PreviewPhase';
+import ChallengePhase from './components/ChallengePhase';
+import ResultsScreen from './components/ResultsScreen';
+import RulesModal from './components/RulesModal';
+import HighScoresModal from './components/HighScoresModal';
+import HandGestureOverlay from './components/HandGestureOverlay';
+import { HandGestureProvider } from './context/HandGestureContext';
+import { DIFFICULTY_CONFIG, generateGameRound } from './data/objects';
+import { soundFx } from './utils/audio';
+import { getHighScores, saveHighScore } from './utils/storage';
+import './App.css';
+
+export default function App() {
+  // Game lifecycle phase: 'home' | 'preview' | 'challenge' | 'results'
+  const [phase, setPhase] = useState('home');
+  const [difficultyKey, setDifficultyKey] = useState('easy');
+  const [roundData, setRoundData] = useState(null);
+  const [resultsData, setResultsData] = useState(null);
+  const [highScores, setHighScores] = useState(() => getHighScores());
+  const [isRulesOpen, setIsRulesOpen] = useState(false);
+  const [isHighScoresOpen, setIsHighScoresOpen] = useState(false);
+  const [soundMuted, setSoundMuted] = useState(soundFx.muted);
+
+  const refreshHighScores = useCallback(() => {
+    setHighScores(getHighScores());
+  }, []);
+
+  useEffect(() => {
+    refreshHighScores();
+  }, [refreshHighScores]);
+
+  const handleToggleSound = () => {
+    const isMuted = soundFx.toggleMute();
+    setSoundMuted(isMuted);
+    if (!isMuted) soundFx.pickup();
+  };
+
+  const handleStartGame = () => {
+    const newRound = generateGameRound(difficultyKey);
+    setRoundData(newRound);
+    setResultsData(null);
+    setPhase('preview');
+  };
+
+  const handlePreviewComplete = useCallback(() => {
+    setPhase('challenge');
+  }, []);
+
+  const handleChallengeComplete = useCallback((finalPlacements, timeUsed) => {
+    if (!roundData) return;
+    let correctCount = 0;
+    roundData.originalSlots.forEach((orig) => {
+      const placed = finalPlacements[orig.originalSlot];
+      if (placed && placed.id === orig.id) correctCount += 1;
+    });
+
+    const score = correctCount * 10;
+    const accuracy = Math.round((correctCount / roundData.originalSlots.length) * 100);
+    const { isNewHigh } = saveHighScore(difficultyKey, score, accuracy, timeUsed);
+    refreshHighScores();
+
+    setResultsData({ placements: finalPlacements, timeUsed, isNewHigh });
+    setPhase('results');
+  }, [roundData, difficultyKey, refreshHighScores]);
+
+  const handlePlayAgain = () => {
+    soundFx.pickup();
+    handleStartGame();
+  };
+
+  const handleChangeDifficulty = () => {
+    soundFx.pickup();
+    setPhase('home');
+  };
+
+  const handleGoHome = () => {
+    soundFx.remove();
+    setPhase('home');
+  };
+
+  return (
+    <HandGestureProvider>
+      <div className="app-wrapper">
+        <HandGestureOverlay />
+        <div className="ambient-orb ambient-orb-1" />
+        <div className="ambient-orb ambient-orb-2" />
+        <div className="ambient-orb ambient-orb-3" />
+
+        <div className="main-container">
+          <Navbar
+            phase={phase}
+            difficulty={DIFFICULTY_CONFIG[difficultyKey]}
+            soundMuted={soundMuted}
+            onToggleSound={handleToggleSound}
+            onOpenRules={() => setIsRulesOpen(true)}
+            onOpenHighScores={() => setIsHighScoresOpen(true)}
+            onGoHome={handleGoHome}
+          />
+
+          <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {phase === 'home' && (
+              <HomeScreen
+                selectedDifficulty={difficultyKey}
+                onSelectDifficulty={setDifficultyKey}
+                onStartGame={handleStartGame}
+                highScores={highScores}
+                onOpenRules={() => setIsRulesOpen(true)}
+              />
+            )}
+            {phase === 'preview' && roundData && (
+              <PreviewPhase
+                originalSlots={roundData.originalSlots}
+                difficultyConfig={roundData.config}
+                onPreviewComplete={handlePreviewComplete}
+              />
+            )}
+            {phase === 'challenge' && roundData && (
+              <ChallengePhase
+                originalSlots={roundData.originalSlots}
+                shuffledTray={roundData.shuffledTray}
+                difficultyConfig={roundData.config}
+                onChallengeComplete={handleChallengeComplete}
+              />
+            )}
+            {phase === 'results' && roundData && resultsData && (
+              <ResultsScreen
+                originalSlots={roundData.originalSlots}
+                placements={resultsData.placements}
+                timeUsed={resultsData.timeUsed}
+                difficultyConfig={roundData.config}
+                isNewHigh={resultsData.isNewHigh}
+                onPlayAgain={handlePlayAgain}
+                onChangeDifficulty={handleChangeDifficulty}
+                onGoHome={handleGoHome}
+              />
+            )}
+          </main>
+        </div>
+
+        <RulesModal isOpen={isRulesOpen} onClose={() => setIsRulesOpen(false)} />
+        <HighScoresModal
+          isOpen={isHighScoresOpen}
+          onClose={() => setIsHighScoresOpen(false)}
+          highScores={highScores}
+        />
+      </div>
+    </HandGestureProvider>
+  );
+}`
+      },
+      {
+        path: "src/components/ChallengePhase.jsx",
+        name: "ChallengePhase.jsx",
+        category: "Components",
+        ext: "jsx",
+        lines: 646,
+        size: "21.8 KB",
+        content: `// 60-Second Challenge Arena
+// Drag & drop slots, collection tray, tap-to-select, and hand gesture synchronization.
+import React, { useState, useEffect, useRef } from 'react';
+import { soundFx } from '../utils/audio';
+import { useHandGestures } from '../context/HandGestureContext';
+
+export default function ChallengePhase({
+  originalSlots,
+  shuffledTray,
+  difficultyConfig,
+  onChallengeComplete
+}) {
+  const totalSeconds = difficultyConfig.challengeSeconds || 60;
+  const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
+  const [isGameOver, setIsGameOver] = useState(false);
+  
+  // Placements map: { 1: item, 2: null, ... }
+  const [placements, setPlacements] = useState(() => {
+    const init = {};
+    for (let i = 1; i <= originalSlots.length; i++) init[i] = null;
+    return init;
+  });
+
+  const [selectedEntity, setSelectedEntity] = useState(null);
+  const [dragOverSlot, setDragOverSlot] = useState(null);
+  const completedRef = useRef(false);
+
+  // Countdown timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          if (!completedRef.current) {
+            completedRef.current = true;
+            setIsGameOver(true);
+            soundFx.buzzer();
+            onChallengeComplete(placements, totalSeconds);
+          }
+          return 0;
+        }
+        if (prev <= 10) soundFx.urgentTick();
+        else soundFx.tick();
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [placements, totalSeconds, onChallengeComplete]);
+
+  // Hand gesture virtual cursor interaction & drag drop hooks
+  // ... Handles slot dropping, swapping, and tray restoration ...
+}`
+      },
+      {
+        path: "src/components/HandGestureOverlay.jsx",
+        name: "HandGestureOverlay.jsx",
+        category: "Components",
+        ext: "jsx",
+        lines: 240,
+        size: "8.3 KB",
+        content: `import React, { useState } from 'react';
+import { useHandGestures } from '../context/HandGestureContext';
+
+export default function HandGestureOverlay() {
+  const {
+    isCameraEnabled,
+    toggleCamera,
+    cameraStatus,
+    handDetected,
+    isPinching,
+    pinchProgress,
+    cursorPos,
+    draggedItem,
+    pipMinimized,
+    setPipMinimized,
+    videoRef,
+    canvasRef
+  } = useHandGestures();
+
+  if (!isCameraEnabled) return null;
+
+  return (
+    <>
+      {/* 1. Virtual Hand Cursor & Floating Reticle */}
+      {cursorPos.visible && (
+        <div
+          className={\`gesture-virtual-cursor \${isPinching ? 'pinched' : ''} \${
+            handDetected ? 'tracking' : 'idle'
+          }\`}
+          style={{ transform: \`translate3d(\${cursorPos.x}px, \${cursorPos.y}px, 0)\` }}
+        >
+          <div className="cursor-ring-outer" />
+          <div
+            className="cursor-pinch-ring"
+            style={{
+              transform: \`scale(\${1 - pinchProgress * 0.45})\`,
+              borderColor: isPinching ? '#10b981' : pinchProgress > 0.5 ? '#f59e0b' : '#06b6d4'
+            }}
+          />
+          <div className="cursor-dot-center" />
+        </div>
+      )}
+
+      {/* 2. PIP Webcam Video Feed & Hand Skeleton Overlay */}
+      <div className={\`gesture-pip-window \${pipMinimized ? 'minimized' : ''}\`}>
+        <video ref={videoRef} className="gesture-pip-video" playsInline muted autoPlay />
+        <canvas ref={canvasRef} className="gesture-pip-canvas" />
+      </div>
+    </>
+  );
+}`
+      },
+      {
+        path: "src/context/HandGestureContext.jsx",
+        name: "HandGestureContext.jsx",
+        category: "Context",
+        ext: "jsx",
+        lines: 474,
+        size: "15.0 KB",
+        content: `// React 19 Context for MediaPipe Hand Tracking and Gesture Dispatch
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { loadMediaPipeScripts, calculatePinchDistance, drawHandSkeleton } from '../utils/handTracking';
+import { soundFx } from '../utils/audio';
+
+const HandGestureContext = createContext(null);
+
+export function useHandGestures() {
+  const ctx = useContext(HandGestureContext);
+  if (!ctx) throw new Error('useHandGestures must be used within HandGestureProvider');
+  return ctx;
+}
+
+export function HandGestureProvider({ children }) {
+  const [isCameraEnabled, setIsCameraEnabled] = useState(false);
+  const [handDetected, setHandDetected] = useState(false);
+  const [isPinching, setIsPinching] = useState(false);
+  const [pinchProgress, setPinchProgress] = useState(0);
+  const [cursorPos, setCursorPos] = useState({ x: 500, y: 300, visible: false });
+
+  // Camera video stream, MediaPipe Hands pipeline, and 30fps landmark loop...
+  return (
+    <HandGestureContext.Provider value={{
+      isCameraEnabled,
+      handDetected,
+      isPinching,
+      pinchProgress,
+      cursorPos,
+      // ... context methods
+    }}>
+      {children}
+    </HandGestureContext.Provider>
+  );
+}`
+      },
+      {
+        path: "src/data/objects.js",
+        name: "objects.js",
+        category: "Data",
+        ext: "js",
+        lines: 125,
+        size: "6.8 KB",
+        content: `// Comprehensive library of 50 recognizable objects with distinct emojis, names, and vibrant color themes.
+export const OBJECT_LIBRARY = [
+  { id: 'apple', name: 'Red Apple', emoji: '🍎', color: '#ff4d4d', category: 'Food' },
+  { id: 'key', name: 'Golden Key', emoji: '🔑', color: '#e6b800', category: 'Tools' },
+  { id: 'phone', name: 'Smartphone', emoji: '📱', color: '#38bdf8', category: 'Tech' },
+  { id: 'ball', name: 'Soccer Ball', emoji: '⚽', color: '#f8fafc', category: 'Sports' },
+  { id: 'rocket', name: 'Space Rocket', emoji: '🚀', color: '#f43f5e', category: 'Travel' },
+  { id: 'guitar', name: 'Acoustic Guitar', emoji: '🎸', color: '#fb923c', category: 'Music' },
+  { id: 'watch', name: 'Wrist Watch', emoji: '⌚', color: '#94a3b8', category: 'Accessory' },
+  { id: 'diamond', name: 'Shiny Diamond', emoji: '💎', color: '#06b6d4', category: 'Treasure' },
+  { id: 'pizza', name: 'Pizza Slice', emoji: '🍕', color: '#f59e0b', category: 'Food' },
+  { id: 'coffee', name: 'Hot Coffee', emoji: '☕', color: '#b45309', category: 'Beverage' },
+  { id: 'headphones', name: 'Headphones', emoji: '🎧', color: '#a855f7', category: 'Tech' },
+  { id: 'trophy', name: 'Gold Trophy', emoji: '🏆', color: '#eab308', category: 'Awards' },
+  { id: 'camera', name: 'Camera', emoji: '📷', color: '#64748b', category: 'Tech' },
+  { id: 'car', name: 'Red Sports Car', emoji: '🚗', color: '#ef4444', category: 'Vehicles' },
+  { id: 'bicycle', name: 'Bicycle', emoji: '🚲', color: '#10b981', category: 'Vehicles' },
+  { id: 'airplane', name: 'Jet Airplane', emoji: '✈️', color: '#60a5fa', category: 'Vehicles' },
+  { id: 'bulb', name: 'Light Bulb', emoji: '💡', color: '#facc15', category: 'Tools' },
+  { id: 'bell', name: 'Golden Bell', emoji: '🔔', color: '#f59e0b', category: 'Tools' },
+  { id: 'crown', name: 'Royal Crown', emoji: '👑', color: '#eab308', category: 'Treasure' },
+  { id: 'compass', name: 'Navigator Compass', emoji: '🧭', color: '#14b8a6', category: 'Travel' }
+  // ... 50 total items
+];
+
+export const DIFFICULTY_CONFIG = {
+  easy: {
+    id: 'easy',
+    name: 'Easy',
+    itemCount: 10,
+    previewSeconds: 15,
+    challengeSeconds: 60,
+    gridCols: 5,
+    gridRows: 2,
+    badge: 'Beginner',
+    color: '#10b981',
+    description: '10 objects to remember in 15 seconds. Great warm-up!'
+  },
+  medium: {
+    id: 'medium',
+    name: 'Medium',
+    itemCount: 15,
+    previewSeconds: 15,
+    challengeSeconds: 60,
+    gridCols: 5,
+    gridRows: 3,
+    badge: 'Challenger',
+    color: '#f59e0b',
+    description: '15 objects. Requires sharp spatial memory and concentration.'
+  },
+  hard: {
+    id: 'hard',
+    name: 'Hard',
+    itemCount: 20,
+    previewSeconds: 15,
+    challengeSeconds: 60,
+    gridCols: 5,
+    gridRows: 4,
+    badge: 'Grandmaster',
+    color: '#ef4444',
+    description: '20 objects in 15 seconds! Only the sharpest minds conquer this.'
+  }
+};`
+      },
+      {
+        path: "src/utils/audio.js",
+        name: "audio.js",
+        category: "Utils",
+        ext: "js",
+        lines: 157,
+        size: "3.7 KB",
+        content: `// Web Audio API Synthesizer for 100% reliable, zero-latency in-browser sound effects.
+class SoundFX {
+  constructor() {
+    this.ctx = null;
+    this.muted = false;
+  }
+
+  init() {
+    if (!this.ctx && typeof window !== 'undefined') {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  }
+
+  playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15, pitchBend = null) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      if (pitchBend) {
+        osc.frequency.exponentialRampToValueAtTime(pitchBend, this.ctx.currentTime + duration);
+      }
+      gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch {}
+  }
+
+  tick() { this.playTone(800, 'sine', 0.04, 0.08); }
+  urgentTick() { this.playTone(950, 'triangle', 0.08, 0.18, 550); }
+  pickup() { this.playTone(440, 'sine', 0.08, 0.12, 660); }
+  drop() { this.playTone(520, 'sine', 0.08, 0.14); }
+  buzzer() { this.playTone(140, 'sawtooth', 0.45, 0.25, 90); }
+  // ...
+}
+export const soundFx = new SoundFX();`
+      },
+      {
+        path: "Memory-Master.html",
+        name: "Memory-Master.html",
+        category: "Standalone",
+        ext: "html",
+        lines: 33,
+        size: "320.8 KB",
+        content: `<!-- Self-contained production build bundled by vite-plugin-singlefile -->
+<!-- Contains all React 19 libraries, components, styles, and assets in a single executable HTML file. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Memory Master – 60 Second Challenge</title>
+    <!-- Google MediaPipe Hands AI Tracking for Webcam Gestures -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script type="module" crossorigin>
+      /* Bundled React 19 + Components + SoundFX + Storage + HandTracking (320 KB) */
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`
+      },
+      {
+        path: "package.json",
+        name: "package.json",
+        category: "Config",
+        ext: "json",
+        lines: 26,
+        size: "538 B",
+        content: `{
+  "name": "pick-and-place",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.9.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "vite": "^8.3.0",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}`
+      },
+      {
+        path: "vite.config.js",
+        name: "vite.config.js",
+        category: "Config",
+        ext: "js",
+        lines: 10,
+        size: "236 B",
+        content: `import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
+import { viteSingleFile } from 'vite-plugin-singlefile'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react(), viteSingleFile()],
+})`
+      },
+      {
+        path: "start-game.bat",
+        name: "start-game.bat",
+        category: "Launcher",
+        ext: "bat",
+        lines: 32,
+        size: "963 B",
+        content: `@echo off
+title Memory Master – 60 Second Challenge
+echo ========================================================
+echo   Launching Memory Master – 60 Second Challenge...
+echo ========================================================
+cd /d "%~dp0"
+
+:: 1. If the standalone Memory-Master.html file exists, open it immediately!
+if exist "%~dp0Memory-Master.html" (
+    echo Opening standalone game in your browser...
+    start "" "%~dp0Memory-Master.html"
+    exit /b
+)
+
+if exist "%~dp0dist\\index.html" (
+    echo Opening standalone game in your browser...
+    start "" "%~dp0dist\\index.html"
+    exit /b
+)
+
+:: 2. Fallback for development if standalone file is missing
+where npm.cmd >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    start "" http://localhost:5173/
+    npm.cmd run dev
+) else (
+    echo Node.js is not installed on this PC.
+    echo Please make sure Memory-Master.html is present.
+    pause
+)`
+      }
+    ];
+
+    /* ======================================================== */
+    /* 2. 50 OBJECTS CATALOG DATA                               */
+    /* ======================================================== */
+    const OBJECT_CATALOG = [
+      { id: 'apple', name: 'Red Apple', emoji: '🍎', color: '#ff4d4d', category: 'Food' },
+      { id: 'key', name: 'Golden Key', emoji: '🔑', color: '#e6b800', category: 'Tools' },
+      { id: 'phone', name: 'Smartphone', emoji: '📱', color: '#38bdf8', category: 'Tech' },
+      { id: 'ball', name: 'Soccer Ball', emoji: '⚽', color: '#f8fafc', category: 'Sports' },
+      { id: 'rocket', name: 'Space Rocket', emoji: '🚀', color: '#f43f5e', category: 'Travel' },
+      { id: 'guitar', name: 'Acoustic Guitar', emoji: '🎸', color: '#fb923c', category: 'Music' },
+      { id: 'watch', name: 'Wrist Watch', emoji: '⌚', color: '#94a3b8', category: 'Accessory' },
+      { id: 'diamond', name: 'Shiny Diamond', emoji: '💎', color: '#06b6d4', category: 'Treasure' },
+      { id: 'pizza', name: 'Pizza Slice', emoji: '🍕', color: '#f59e0b', category: 'Food' },
+      { id: 'coffee', name: 'Hot Coffee', emoji: '☕', color: '#b45309', category: 'Beverage' },
+      { id: 'headphones', name: 'Headphones', emoji: '🎧', color: '#a855f7', category: 'Tech' },
+      { id: 'trophy', name: 'Gold Trophy', emoji: '🏆', color: '#eab308', category: 'Awards' },
+      { id: 'camera', name: 'Camera', emoji: '📷', color: '#64748b', category: 'Tech' },
+      { id: 'car', name: 'Red Sports Car', emoji: '🚗', color: '#ef4444', category: 'Vehicles' },
+      { id: 'bicycle', name: 'Bicycle', emoji: '🚲', color: '#10b981', category: 'Vehicles' },
+      { id: 'airplane', name: 'Jet Airplane', emoji: '✈️', color: '#60a5fa', category: 'Vehicles' },
+      { id: 'bulb', name: 'Light Bulb', emoji: '💡', color: '#facc15', category: 'Tools' },
+      { id: 'bell', name: 'Golden Bell', emoji: '🔔', color: '#f59e0b', category: 'Tools' },
+      { id: 'crown', name: 'Royal Crown', emoji: '👑', color: '#eab308', category: 'Treasure' },
+      { id: 'compass', name: 'Navigator Compass', emoji: '🧭', color: '#14b8a6', category: 'Travel' },
+      { id: 'palette', name: 'Artist Palette', emoji: '🎨', color: '#ec4899', category: 'Art' },
+      { id: 'gift', name: 'Gift Box', emoji: '🎁', color: '#f43f5e', category: 'Items' },
+      { id: 'lock', name: 'Padlock', emoji: '🔒', color: '#eab308', category: 'Security' },
+      { id: 'sunglasses', name: 'Sunglasses', emoji: '🕶️', color: '#64748b', category: 'Fashion' },
+      { id: 'magnet', name: 'Horseshoe Magnet', emoji: '🧲', color: '#ef4444', category: 'Science' },
+      { id: 'telescope', name: 'Telescope', emoji: '🔭', color: '#6366f1', category: 'Science' },
+      { id: 'planet', name: 'Ringed Planet', emoji: '🪐', color: '#d97706', category: 'Space' },
+      { id: 'lightning', name: 'Lightning Bolt', emoji: '⚡', color: '#facc15', category: 'Nature' },
+      { id: 'umbrella', name: 'Rain Umbrella', emoji: '☂️', color: '#8b5cf6', category: 'Weather' },
+      { id: 'book', name: 'Hardcover Book', emoji: '📖', color: '#3b82f6', category: 'Education' },
+      { id: 'pen', name: 'Fountain Pen', emoji: '✒️', color: '#64748b', category: 'Stationery' },
+      { id: 'clock', name: 'Alarm Clock', emoji: '⏰', color: '#ef4444', category: 'Time' },
+      { id: 'cup', name: 'Tea Cup', emoji: '🍵', color: '#10b981', category: 'Beverage' },
+      { id: 'shoe', name: 'Running Sneaker', emoji: '👟', color: '#38bdf8', category: 'Fashion' },
+      { id: 'dice', name: 'Lucky Dice', emoji: '🎲', color: '#ec4899', category: 'Games' },
+      { id: 'candle', name: 'Wax Candle', emoji: '🕯️', color: '#f59e0b', category: 'Light' },
+      { id: 'violin', name: 'Classical Violin', emoji: '🎻', color: '#b45309', category: 'Music' },
+      { id: 'fire', name: 'Campfire', emoji: '🔥', color: '#f97316', category: 'Nature' },
+      { id: 'anchor', name: 'Nautical Anchor', emoji: '⚓', color: '#475569', category: 'Marine' },
+      { id: 'basketball', name: 'Basketball', emoji: '🏀', color: '#ea580c', category: 'Sports' },
+      { id: 'puzzle', name: 'Puzzle Piece', emoji: '🧩', color: '#06b6d4', category: 'Games' },
+      { id: 'donut', name: 'Glazed Donut', emoji: '🍩', color: '#d946ef', category: 'Food' },
+      { id: 'flask', name: 'Science Flask', emoji: '🧪', color: '#10b981', category: 'Science' },
+      { id: 'flashlight', name: 'Flashlight', emoji: '🔦', color: '#eab308', category: 'Tools' },
+      { id: 'hourglass', name: 'Hourglass', emoji: '⏳', color: '#ca8a04', category: 'Time' },
+      { id: 'backpack', name: 'School Backpack', emoji: '🎒', color: '#ef4444', category: 'Travel' },
+      { id: 'axe', name: 'Lumber Axe', emoji: '🪓', color: '#b45309', category: 'Tools' },
+      { id: 'microscope', name: 'Microscope', emoji: '🔬', color: '#8b5cf6', category: 'Science' },
+      { id: 'rainbow', name: 'Rainbow', emoji: '🌈', color: '#ec4899', category: 'Nature' },
+      { id: 'drum', name: 'Marching Drum', emoji: '🥁', color: '#dc2626', category: 'Music' }
+    ];
+
+    /* ======================================================== */
+    /* 3. TABS SWITCHING LOGIC                                  */
+    /* ======================================================== */
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach((p) => p.classList.remove('active'));
+        btn.classList.add('active');
+        const target = btn.dataset.tab;
+        document.getElementById(target)?.classList.add('active');
+      });
+    });
+
+    document.getElementById('reloadIframeBtn').addEventListener('click', () => {
+      const iframe = document.getElementById('gameIframe');
+      iframe.src = iframe.src;
+    });
+
+    /* ======================================================== */
+    /* 4. FILE EXPLORER INITIALIZATION                          */
+    /* ======================================================== */
+    const fileTreeContainer = document.getElementById('fileTreeContainer');
+    const codeDisplayArea = document.getElementById('codeDisplayArea');
+    const activeFileName = document.getElementById('activeFileName');
+    const activeFilePath = document.getElementById('activeFilePath');
+    const activeFileExt = document.getElementById('activeFileExt');
+    const activeFileLineCount = document.getElementById('activeFileLineCount');
+    let currentActiveIndex = 0;
+
+    function renderFileTree(filter = '') {
+      fileTreeContainer.innerHTML = '';
+      const categories = ['Components', 'Context', 'Data', 'Utils', 'Standalone', 'Config', 'Launcher'];
+
+      categories.forEach((cat) => {
+        const filesInCat = PROJECT_FILES.filter(
+          (f) => f.category === cat && (f.name.toLowerCase().includes(filter.toLowerCase()) || f.path.toLowerCase().includes(filter.toLowerCase()))
+        );
+
+        if (filesInCat.length === 0) return;
+
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'file-tree-group-title';
+        groupTitle.innerHTML = \`<span>\${cat}</span><span>\${filesInCat.length}</span>\`;
+        fileTreeContainer.appendChild(groupTitle);
+
+        filesInCat.forEach((file) => {
+          const originalIdx = PROJECT_FILES.indexOf(file);
+          const btn = document.createElement('button');
+          btn.className = \`file-item-btn \${originalIdx === currentActiveIndex ? 'active' : ''}\`;
+          btn.innerHTML = \`
+            <div class="file-left-meta">
+              <span class="file-ext-chip ext-\${file.ext}">\${file.ext.toUpperCase()}</span>
+              <span style="overflow: hidden; text-overflow: ellipsis;">\${file.name}</span>
+            </div>
+            <span class="file-size-badge">\${file.size}</span>
+          \`;
+
+          btn.addEventListener('click', () => {
+            selectFile(originalIdx);
+          });
+
+          fileTreeContainer.appendChild(btn);
+        });
+      });
+    }
+
+    function selectFile(idx) {
+      currentActiveIndex = idx;
+      const file = PROJECT_FILES[idx];
+      activeFileName.textContent = file.name;
+      activeFilePath.textContent = file.path;
+      activeFileExt.textContent = file.ext.toUpperCase();
+      activeFileExt.className = \`file-ext-chip ext-\${file.ext}\`;
+      activeFileLineCount.textContent = \`\${file.lines} Lines • \${file.size}\`;
+      codeDisplayArea.textContent = file.content;
+      renderFileTree(document.getElementById('fileSearchInput').value);
+    }
+
+    document.getElementById('fileSearchInput').addEventListener('input', (e) => {
+      renderFileTree(e.target.value);
+    });
+
+    document.getElementById('copyCodeBtn').addEventListener('click', () => {
+      const content = codeDisplayArea.textContent;
+      navigator.clipboard.writeText(content).then(() => {
+        const btn = document.getElementById('copyCodeBtn');
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<span>✅</span> Copied!';
+        setTimeout(() => (btn.innerHTML = oldHtml), 1500);
+      });
+    });
+
+    /* ======================================================== */
+    /* 5. NATIVE WEB AUDIO SYNTHESIZER SOUNDBOARD               */
+    /* ======================================================== */
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) {
+        const AudioClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioClass) audioCtx = new AudioClass();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15, pitchBend = null) {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        if (pitchBend) {
+          osc.frequency.exponentialRampToValueAtTime(pitchBend, ctx.currentTime + duration);
+        }
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function playSoundEffect(name) {
+      switch (name) {
+        case 'pickup':
+          playTone(440, 'sine', 0.08, 0.12, 660);
+          break;
+        case 'drop':
+          playTone(520, 'sine', 0.08, 0.14);
+          break;
+        case 'tick':
+          playTone(800, 'sine', 0.04, 0.08);
+          break;
+        case 'urgentTick':
+          playTone(950, 'triangle', 0.08, 0.18, 550);
+          break;
+        case 'previewTick':
+          playTone(880, 'triangle', 0.12, 0.22, 1100);
+          break;
+        case 'previewEnd':
+          playTone(660, 'triangle', 0.15, 0.2, 990);
+          break;
+        case 'victory':
+          [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+            setTimeout(() => playTone(f, 'triangle', 0.22, 0.15), i * 85);
+          });
+          break;
+        case 'buzzer':
+          playTone(140, 'sawtooth', 0.45, 0.22, 90);
+          break;
+        default:
+          playTone(440, 'sine', 0.1);
+      }
+    }
+
+    document.getElementById('quickSoundBtn').addEventListener('click', () => {
+      playSoundEffect('victory');
+    });
+
+    /* ======================================================== */
+    /* 6. GESTURE TEST PAD SIMULATOR                            */
+    /* ======================================================== */
+    const testPad = document.getElementById('gestureTestPad');
+    const padDot = document.getElementById('gesturePadDot');
+    const padRing = document.getElementById('gesturePadRing');
+    const diagX = document.getElementById('diagCoordX');
+    const diagY = document.getElementById('diagCoordY');
+    const diagPinch = document.getElementById('diagPinchVal');
+    const pinchStatus = document.getElementById('pinchStatusIndicator');
+
+    let isPinchingDemo = false;
+
+    testPad.addEventListener('mousemove', (e) => {
+      const rect = testPad.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      padDot.style.left = \`\${x}px\`;
+      padDot.style.top = \`\${y}px\`;
+      padRing.style.left = \`\${x}px\`;
+      padRing.style.top = \`\${y}px\`;
+      diagX.textContent = Math.round(x);
+      diagY.textContent = Math.round(y);
+    });
+
+    testPad.addEventListener('mousedown', () => {
+      isPinchingDemo = true;
+      padRing.style.transform = 'translate(-50%, -50%) scale(0.4)';
+      padRing.style.borderColor = '#10b981';
+      diagPinch.textContent = '0.024 (PINCHED!)';
+      pinchStatus.textContent = '🟢 PINCH DETECTED (Grab Card)';
+      pinchStatus.style.color = '#10b981';
+      playSoundEffect('pickup');
+    });
+
+    testPad.addEventListener('mouseup', () => {
+      isPinchingDemo = false;
+      padRing.style.transform = 'translate(-50%, -50%) scale(1)';
+      padRing.style.borderColor = '#8b5cf6';
+      diagPinch.textContent = '0.082 (Released)';
+      pinchStatus.textContent = '⚪ Move mouse inside & click to pinch';
+      pinchStatus.style.color = 'var(--accent-cyan)';
+      playSoundEffect('drop');
+    });
+
+    /* ======================================================== */
+    /* 7. OBJECT CATALOG RENDERER                               */
+    /* ======================================================== */
+    const catalogGrid = document.getElementById('catalogObjectsGrid');
+    const categoryPillsContainer = document.getElementById('catalogCategoryPills');
+
+    const allCategories = ['All', ...new Set(OBJECT_CATALOG.map((o) => o.category))];
+    let selectedCat = 'All';
+
+    function renderCategoryPills() {
+      categoryPillsContainer.innerHTML = '';
+      allCategories.forEach((cat) => {
+        const btn = document.createElement('button');
+        btn.className = \`cat-pill-btn \${cat === selectedCat ? 'active' : ''}\`;
+        btn.textContent = cat;
+        btn.addEventListener('click', () => {
+          selectedCat = cat;
+          renderCategoryPills();
+          renderCatalog();
+        });
+        categoryPillsContainer.appendChild(btn);
+      });
+    }
+
+    function renderCatalog() {
+      catalogGrid.innerHTML = '';
+      const filtered = selectedCat === 'All' ? OBJECT_CATALOG : OBJECT_CATALOG.filter((o) => o.category === selectedCat);
+
+      filtered.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'item-chip-card';
+        card.style.borderTop = \`2px solid \${item.color}\`;
+        card.innerHTML = \`
+          <div class="item-chip-emoji">\${item.emoji}</div>
+          <div class="item-chip-name">\${item.name}</div>
+          <div class="item-chip-cat">\${item.category}</div>
+        \`;
+        catalogGrid.appendChild(card);
+      });
+    }
+
+    // Initialize on load
+    selectFile(0);
+    renderCategoryPills();
+    renderCatalog();
+  </script>
+</body>
+</html>
